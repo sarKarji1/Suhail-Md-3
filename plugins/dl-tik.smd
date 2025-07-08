@@ -1,6 +1,6 @@
 const axios = require('axios');
-const config = require('../../config');
-const { smd } = require('../lib'); // ya '../lib' agar index.js hi hai
+//const config = require('../../config');
+const { smd, config } = require('../lib');
 
 smd({
   cmdname: "tik2",
