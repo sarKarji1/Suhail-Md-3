@@ -1,20 +1,11 @@
-# Base image
-FROM node:lts-buster
+FROM quay.io/suhailtechinfo/suhail-v2
+RUN git clone https://github.com/SuhailTechInfo/Suhail-Md-3 /root/smdd
+RUN rm -rf /root/smdd/.git
+WORKDIR /root/smdd
+RUN npm install || yarn install
+EXPOSE 8000
+CMD ["npm","start" ] 
 
-# Set working directory
-WORKDIR /
 
-# Only copy package.json (no lock file)
-COPY package.json .
 
-# Install dependencies (no lock file used)
-RUN npm install --omit=dev
 
-# Copy the rest of the application files
-COPY . .
-
-# Expose your port
-EXPOSE 9090
-
-# Start the app using npm
-CMD ["npm", "start"]
