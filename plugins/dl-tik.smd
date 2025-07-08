@@ -1,0 +1,42 @@
+import axios from 'axios'
+import config from '../../config.js'
+import { smd } from '../lib' // ya '../lib' agar index.js hi hai
+
+smd({
+  cmdname: "tik2",
+  alias: ['tiktok2', 'tt2'],
+  desc: "Download TikTok video without watermark",
+  type: "downloader",
+  filename: __filename
+},
+async (m) => {
+  try {
+    let text = m.body.split(" ").slice(1).join(" ").trim();
+
+    // If text is empty, check if it's a reply to a message
+    if (!text && m.quoted?.body) text = m.quoted.body;
+
+    if (!text || !text.includes('tiktok.com')) {
+      return await m.reply("*🌀 Provide a valid TikTok video URL!*\n\nExample:\n.tik2 https://vt.tiktok.com/ZSB5Dc6YX/");
+    }
+
+    // Fetch data from API
+    const res = await axios.get(`https://delirius-apiofc.vercel.app/download/tiktok?url=${encodeURIComponent(text)}`);
+    const json = res.data;
+
+    if (!json.status || !json?.data?.meta?.media?.[0]?.org) {
+      return await m.reply("❌ *Failed to fetch video. Please try a different URL.*");
+    }
+
+    const video = json.data.meta.media[0].org;
+    const title = json.data.title || "TikTok Video";
+    const author = json.data.author?.nickname || json.data.author?.username || "Unknown";
+
+    const caption = `🎬 *${title}*\n👤 By: ${author}\n🔗 Source: TikTok`;
+
+    await m.send(video, { caption }, "video", m);
+
+  } catch (e) {
+    await m.error(`${e}\n\nCommand: tik2`, e, false);
+  }
+});
