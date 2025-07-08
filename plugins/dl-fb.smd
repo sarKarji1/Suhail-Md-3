@@ -40,8 +40,8 @@ const FB_APIS = [
 ];
 
 smd({
-  'pattern': 'fb',
-  'alias': ['facebook', 'fbdl'],
+  'pattern': 'fb2',
+  'alias': ['facebook2', 'fbdl2'],
   'desc': 'Download Facebook videos',
   'category': 'downloader',
   'filename': __filename,
@@ -81,7 +81,7 @@ smd({
     const videoUrl = result.hd || result.sd;
     await message.reply(`*Facebook Video Downloader*\n\nQuality: ${result.hd ? 'HD' : 'SD'}\n\nDownloading...`);
 
-    await message.client.send(message.jid, {
+    await message.send(message.jid, {
       video: { url: videoUrl },
       caption: Config.caption || "Powered By Bandaheali",
       thumbnail: result.thumb ? await fetchJson(result.thumb) : null
