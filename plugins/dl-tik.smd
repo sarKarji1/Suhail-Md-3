@@ -1,42 +1,50 @@
+const {
+  smd,
+  tlang,
+  prefix,
+  Config,
+  sleep,
+  getBuffer,
+  smdJson,
+  smdBuffer
+} = require('../lib');
+
 const axios = require('axios');
-//const config = require('../../config');
-const { smd, config } = require('../lib');
 
 smd({
   cmdname: "tik2",
-  alias: ['tiktok2', 'tt2'],
+  alias: ["tiktok2", "tt2"],
   desc: "Download TikTok video without watermark",
   type: "downloader",
-  filename: __filename
+  filename: __filename,
 },
 async (m) => {
   try {
     let text = m.body.split(" ").slice(1).join(" ").trim();
 
-    // If text is empty, check if it's a reply to a message
+    // If text is empty, try reply text
     if (!text && m.quoted?.body) text = m.quoted.body;
 
-    if (!text || !text.includes('tiktok.com')) {
+    if (!text || !text.includes("tiktok.com")) {
       return await m.reply("*🌀 Provide a valid TikTok video URL!*\n\nExample:\n.tik2 https://vt.tiktok.com/ZSB5Dc6YX/");
     }
 
-    // Fetch data from API
-    const res = await axios.get(`https://delirius-apiofc.vercel.app/download/tiktok?url=${encodeURIComponent(text)}`);
-    const json = res.data;
+    const response = await axios.get(`https://delirius-apiofc.vercel.app/download/tiktok?url=${encodeURIComponent(text)}`);
+    const json = response.data;
 
     if (!json.status || !json?.data?.meta?.media?.[0]?.org) {
-      return await m.reply("❌ *Failed to fetch video. Please try a different URL.*");
+      return await m.reply("❌ *Failed to fetch video. Please try another link.*");
     }
 
-    const video = json.data.meta.media[0].org;
+    const videoUrl = json.data.meta.media[0].org;
     const title = json.data.title || "TikTok Video";
     const author = json.data.author?.nickname || json.data.author?.username || "Unknown";
 
-    const caption = `🎬 *${title}*\n👤 By: ${author}\n🔗 Source: TikTok`;
+    const caption = `🎬 *${title}*\n👤 By: ${author}`;
 
-    await m.send(video, { caption }, "video", m);
+    await m.send(videoUrl, { caption }, "video", m);
 
   } catch (e) {
-    await m.error(`${e}\n\nCommand: tik2`, e, false);
+    m.error(`${e}\n\nCommand: tik2`, e, false);
   }
 });
