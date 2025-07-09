@@ -111,42 +111,45 @@ async (m) => {
     m.error(`${e}\n\nCommand: tik2`, e, false);
   }
 });
+//FACEBOOK
 
-// FACEBOOK COMMAND
 smd({
-  cmdname: "fb",
-  alias: ["facebook", "fbdl"],
-  desc: "Download Facebook videos using API",
+  cmdname: "facebook",
+  alias: ["fb", "fbdl"],
+  desc: "Download Facebook video using direct link",
   type: "downloader",
   filename: __filename,
 },
 async (m) => {
   try {
     let text = m.body.split(" ").slice(1).join(" ").trim();
+
+    // Check for reply message if no text
     if (!text && m.quoted?.body) text = m.quoted.body;
-    if (!text || !text.includes("facebook.com"))
-      return m.reply("*🌀 Provide a valid Facebook video URL!*\n\nExample:\n.fb https://www.facebook.com/share/v/17FQTQ8qVw/");
 
-    const apiUrl = `https://apidl.asepharyana.cloud/api/downloader/fbdl?url=${encodeURIComponent(text)}`;
-    const response = await axios.get(apiUrl, { timeout: 30000 });
-    const json = response.data;
+    if (!text || (!text.includes("facebook.com") && !text.includes("fb.watch"))) {
+      return m.reply("*📘 Provide a valid Facebook video URL!*\n\nExample:\n.fb https://www.facebook.com/share/r/17FQTQ8qVw/");
+    }
 
-    if (!json.status || !json.data || json.data.length === 0)
-      return m.reply("❌ *Failed to fetch video. Please try another link.*");
+    const api = `https://apidl.asepharyana.cloud/api/downloader/fbdl?url=${encodeURIComponent(text)}`;
+    const res = await axios.get(api);
+    const json = res.data;
 
-    const videoData = json.data.reduce((prev, current) => 
-      (parseInt(current.resolution) > parseInt(prev.resolution)) ? current : prev
-    );
+    if (!json.status || !Array.isArray(json.data) || !json.data[0]?.url) {
+      return m.reply("❌ Failed to fetch Facebook video. Try another link.");
+    }
 
-    const videoUrl = videoData.url;
-    const thumbnail = videoData.thumbnail;
-    const quality = videoData.resolution;
+    const videoInfo = json.data[0]; // First available video
+    const videoUrl = videoInfo.url;
+    const resolution = videoInfo.resolution || "Unknown Quality";
+    const thumbnail = videoInfo.thumbnail;
 
-    const caption = `📹 *Facebook Video*\n🖼️ Thumbnail: ${thumbnail ? "Sent" : "None"}\n🎚️ Quality: ${quality || "Unknown"}`;
+    const caption = `🎬 *Facebook Video*\n📥 Resolution: ${resolution}`;
+
     await m.send(videoUrl, { caption, thumbnail }, "video", m);
+
   } catch (e) {
     m.error(`${e}\n\nCommand: fb`, e, false);
-    await m.reply("❌ An error occurred while processing your request. Please try again later.");
   }
 });
 
