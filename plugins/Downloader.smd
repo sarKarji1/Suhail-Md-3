@@ -180,8 +180,6 @@ async (m) => {
   }
 });
 
- requires
-
 smd({
   cmdname: "mega",
   alias: ["megadl", "megadownload"],
