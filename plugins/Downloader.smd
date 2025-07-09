@@ -12,7 +12,9 @@ const {
 const axios = require('axios');
 const yts = require('yt-search');
 const mega = require('megajs');
+const mime = require('mime-types'); // ✅ Fix for mime issue
 
+// VIDEO COMMAND
 smd({
   cmdname: "video",
   alias: ["ytv", "ytvideo"],
@@ -23,36 +25,29 @@ smd({
 async (m) => {
   try {
     let text = m.body.split(" ").slice(1).join(" ").trim();
-
     if (!text) return m.reply("*🎬 Provide a video name to search!*\nExample: `.video tu hai kahan`");
 
-    // 1. Search video on YouTube
     const search = await yts(text);
     const video = search.videos[0];
-
     if (!video) return m.reply("❌ No video found for that query.");
 
-    const videoUrl = video.url;
-    const api = `https://exonity.tech/api/ytdl-download?url=${encodeURIComponent(videoUrl)}&type=video`;
-
-    // 2. Get download link from API
+    const api = `https://exonity.tech/api/ytdl-download?url=${encodeURIComponent(video.url)}&type=video`;
     const res = await axios.get(api);
     const json = res.data;
 
-    if (!json.status || !json.data?.url) {
+    if (!json.status || !json.data?.url)
       return m.reply("❌ Failed to fetch video. Try again.");
-    }
 
     const { title, uploader, duration, thumbnail, url } = json.data;
     const caption = `🎞️ *${title}*\n👤 Uploader: ${uploader}\n⏱ Duration: ${duration}`;
 
     await m.send(url, { caption, thumbnail }, "video", m);
-
   } catch (e) {
     m.error(`${e}\n\nCommand: video2`, e, false);
   }
 });
 
+// AUDIO COMMAND
 smd({
   cmdname: "play",
   alias: ["yta", "ytaudio"],
@@ -63,35 +58,29 @@ smd({
 async (m) => {
   try {
     let text = m.body.split(" ").slice(1).join(" ").trim();
-
     if (!text) return m.reply("*🔍 Provide a song name to search!*\nExample: `.play tu hai kahan`");
 
-    // 1. Search YouTube
     const search = await yts(text);
     const video = search.videos[0];
-
     if (!video) return m.reply("❌ No video found for that query.");
 
-    const videoUrl = video.url;
-    const api = `https://exonity.tech/api/ytdl-download?url=${encodeURIComponent(videoUrl)}&type=audio`;
-
-    // 2. Fetch audio download link
+    const api = `https://exonity.tech/api/ytdl-download?url=${encodeURIComponent(video.url)}&type=audio`;
     const res = await axios.get(api);
     const json = res.data;
 
-    if (!json.status || !json.data?.url) {
+    if (!json.status || !json.data?.url)
       return m.reply("❌ Failed to download audio.");
-    }
 
     const { title, uploader, duration, thumbnail, url } = json.data;
     const caption = `🎶 *${title}*\n👤 Uploader: ${uploader}\n⏱ Duration: ${duration}`;
 
     await m.send(url, { caption, thumbnail }, "audio", m);
-
   } catch (e) {
     m.error(`${e}\n\nCommand: play2`, e, false);
   }
 });
+
+// TIKTOK COMMAND
 smd({
   cmdname: "tik",
   alias: ["tiktok", "tt"],
@@ -102,33 +91,28 @@ smd({
 async (m) => {
   try {
     let text = m.body.split(" ").slice(1).join(" ").trim();
-
-    // If text is empty, try reply text
     if (!text && m.quoted?.body) text = m.quoted.body;
-
-    if (!text || !text.includes("tiktok.com")) {
-      return await m.reply("*🌀 Provide a valid TikTok video URL!*\n\nExample:\n.tik2 https://vt.tiktok.com/ZSB5Dc6YX/");
-    }
+    if (!text || !text.includes("tiktok.com"))
+      return m.reply("*🌀 Provide a valid TikTok video URL!*\n\nExample:\n.tik https://vt.tiktok.com/ZSB5Dc6YX/");
 
     const response = await axios.get(`https://delirius-apiofc.vercel.app/download/tiktok?url=${encodeURIComponent(text)}`);
     const json = response.data;
 
-    if (!json.status || !json?.data?.meta?.media?.[0]?.org) {
-      return await m.reply("❌ *Failed to fetch video. Please try another link.*");
-    }
+    if (!json.status || !json?.data?.meta?.media?.[0]?.org)
+      return m.reply("❌ *Failed to fetch video. Please try another link.*");
 
     const videoUrl = json.data.meta.media[0].org;
     const title = json.data.title || "TikTok Video";
     const author = json.data.author?.nickname || json.data.author?.username || "Unknown";
-
     const caption = `🎬 *${title}*\n👤 By: ${author}`;
 
     await m.send(videoUrl, { caption }, "video", m);
-
   } catch (e) {
     m.error(`${e}\n\nCommand: tik2`, e, false);
   }
 });
+
+// FACEBOOK COMMAND
 smd({
   cmdname: "fb",
   alias: ["facebook", "fbdl"],
@@ -139,28 +123,17 @@ smd({
 async (m) => {
   try {
     let text = m.body.split(" ").slice(1).join(" ").trim();
-
-    // If text is empty, try reply text
     if (!text && m.quoted?.body) text = m.quoted.body;
-
-    if (!text || !text.includes("facebook.com")) {
-      return await m.reply("*🌀 Provide a valid Facebook video URL!*\n\nExample:\n.fb https://www.facebook.com/share/v/17FQTQ8qVw/");
-    }
+    if (!text || !text.includes("facebook.com"))
+      return m.reply("*🌀 Provide a valid Facebook video URL!*\n\nExample:\n.fb https://www.facebook.com/share/v/17FQTQ8qVw/");
 
     const apiUrl = `https://apidl.asepharyana.cloud/api/downloader/fbdl?url=${encodeURIComponent(text)}`;
-    
-    // Show waiting message
-//    const waitMsg = await m.reply("*⏳ Downloading Facebook video... Please wait*");
-    
     const response = await axios.get(apiUrl, { timeout: 30000 });
     const json = response.data;
 
-    if (!json.status || !json.data || json.data.length === 0) {
-     // await waitMsg.delete(); // Remove waiting message
-      return await m.reply("❌ *Failed to fetch video. Please try another link.*");
-    }
+    if (!json.status || !json.data || json.data.length === 0)
+      return m.reply("❌ *Failed to fetch video. Please try another link.*");
 
-    // Get the highest quality video available
     const videoData = json.data.reduce((prev, current) => 
       (parseInt(current.resolution) > parseInt(prev.resolution)) ? current : prev
     );
@@ -170,16 +143,14 @@ async (m) => {
     const quality = videoData.resolution;
 
     const caption = `📹 *Facebook Video*\n🖼️ Thumbnail: ${thumbnail ? "Sent" : "None"}\n🎚️ Quality: ${quality || "Unknown"}`;
-
-    //await waitMsg.delete(); // Remove waiting message
     await m.send(videoUrl, { caption, thumbnail }, "video", m);
-
   } catch (e) {
     m.error(`${e}\n\nCommand: fb`, e, false);
     await m.reply("❌ An error occurred while processing your request. Please try again later.");
   }
 });
 
+// MEGA.NZ COMMAND
 smd({
   cmdname: "mega",
   alias: ["megadl", "megadownload"],
@@ -190,54 +161,31 @@ smd({
 async (m) => {
   try {
     let text = m.body.split(" ").slice(1).join(" ").trim();
-
-    // If text is empty, try reply text
     if (!text && m.quoted?.body) text = m.quoted.body;
 
-    if (!text || !text.match(/mega(\.nz|\.io)/i)) {
-      return await m.reply("*📦 Provide a valid Mega.nz link!*\n\nExample:\n.mega https://mega.nz/file/abc123#xyz456");
-    }
+    if (!text || !text.match(/mega(\.nz|\.io)/i))
+      return m.reply("*📦 Provide a valid Mega.nz link!*\n\nExample:\n.mega https://mega.nz/file/abc123#xyz456");
 
-    // Show waiting message
-  //  const waitMsg = await m.reply("*⏳ Downloading from Mega... This may take a while for large files*");
-
-    // Extract key from URL if present
-    const urlParts = text.split('#');
-    const url = urlParts[0];
-    const key = urlParts[1] || null;
-
-    // Download file from Mega
     const file = await mega.File.fromURL(text).loadAttributes();
-    
-    if (!file) {
-      await waitMsg.delete();
-      return await m.reply("❌ Failed to access file. Check if link is valid.");
-    }
+    if (!file) return m.reply("❌ Failed to access file. Check if link is valid.");
 
-    // Get file info
     const fileName = file.name;
     const fileSize = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
     const fileType = file.name.split('.').pop().toUpperCase();
 
-    // Start download
     const downloadStream = file.download();
-
-    // Collect chunks
     const chunks = [];
-    downloadStream.on('data', (chunk) => chunks.push(chunk));
-    
+
+    downloadStream.on('data', chunk => chunks.push(chunk));
+
     await new Promise((resolve, reject) => {
       downloadStream.on('end', resolve);
       downloadStream.on('error', reject);
     });
 
     const fileBuffer = Buffer.concat(chunks);
-
-   // await waitMsg.delete(); // Remove waiting message
-
-    // Send file with info
     const caption = `📦 *Mega Download*\n\n🗂️ File: ${fileName}\n📊 Size: ${fileSize}\n📝 Type: ${fileType}`;
-    
+
     await m.send(
       fileBuffer, 
       { 
@@ -248,7 +196,6 @@ async (m) => {
       "document", 
       m
     );
-
   } catch (e) {
     m.error(`${e}\n\nCommand: mega`, e, false);
     await m.reply(`❌ Error: ${e.message || "Failed to download file"}`);
