@@ -1,0 +1,18 @@
+const { smd } = require('../lib'); // Adjust path as needed for your core library
+
+smd({
+  'pattern': 'test',
+  'alias': ['testing'],
+  'desc': 'Test command to verify bot functionality',
+  'category': 'utility',
+  'filename': __filename,
+  'use': '.test'
+}, async (message) => {
+  try {
+    // Simply reply with a success message
+    await message.reply("Test completed ✅");
+  } catch (error) {
+    // Error handling if something goes wrong
+    await message.error("Test failed: " + error, error, "Test Command Error");
+  }
+});
