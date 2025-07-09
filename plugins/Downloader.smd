@@ -1,0 +1,180 @@
+const {
+  smd,
+  tlang,
+  prefix,
+  Config,
+  sleep,
+  getBuffer,
+  smdJson,
+  smdBuffer
+} = require('../lib');
+
+const axios = require('axios');
+const yts = require('yt-search');
+
+smd({
+  cmdname: "video",
+  alias: ["ytv", "ytvideo"],
+  desc: "Play YouTube video using yt-search and download via API",
+  type: "downloader",
+  filename: __filename,
+},
+async (m) => {
+  try {
+    let text = m.body.split(" ").slice(1).join(" ").trim();
+
+    if (!text) return m.reply("*🎬 Provide a video name to search!*\nExample: `.video tu hai kahan`");
+
+    // 1. Search video on YouTube
+    const search = await yts(text);
+    const video = search.videos[0];
+
+    if (!video) return m.reply("❌ No video found for that query.");
+
+    const videoUrl = video.url;
+    const api = `https://exonity.tech/api/ytdl-download?url=${encodeURIComponent(videoUrl)}&type=video`;
+
+    // 2. Get download link from API
+    const res = await axios.get(api);
+    const json = res.data;
+
+    if (!json.status || !json.data?.url) {
+      return m.reply("❌ Failed to fetch video. Try again.");
+    }
+
+    const { title, uploader, duration, thumbnail, url } = json.data;
+    const caption = `🎞️ *${title}*\n👤 Uploader: ${uploader}\n⏱ Duration: ${duration}`;
+
+    await m.send(url, { caption, thumbnail }, "video", m);
+
+  } catch (e) {
+    m.error(`${e}\n\nCommand: video2`, e, false);
+  }
+});
+
+smd({
+  cmdname: "play",
+  alias: ["yta", "ytaudio"],
+  desc: "Play YouTube audio using yt-search and download via API",
+  type: "downloader",
+  filename: __filename,
+},
+async (m) => {
+  try {
+    let text = m.body.split(" ").slice(1).join(" ").trim();
+
+    if (!text) return m.reply("*🔍 Provide a song name to search!*\nExample: `.play tu hai kahan`");
+
+    // 1. Search YouTube
+    const search = await yts(text);
+    const video = search.videos[0];
+
+    if (!video) return m.reply("❌ No video found for that query.");
+
+    const videoUrl = video.url;
+    const api = `https://exonity.tech/api/ytdl-download?url=${encodeURIComponent(videoUrl)}&type=audio`;
+
+    // 2. Fetch audio download link
+    const res = await axios.get(api);
+    const json = res.data;
+
+    if (!json.status || !json.data?.url) {
+      return m.reply("❌ Failed to download audio.");
+    }
+
+    const { title, uploader, duration, thumbnail, url } = json.data;
+    const caption = `🎶 *${title}*\n👤 Uploader: ${uploader}\n⏱ Duration: ${duration}`;
+
+    await m.send(url, { caption, thumbnail }, "audio", m);
+
+  } catch (e) {
+    m.error(`${e}\n\nCommand: play2`, e, false);
+  }
+});
+smd({
+  cmdname: "tik",
+  alias: ["tiktok", "tt"],
+  desc: "Download TikTok video without watermark",
+  type: "downloader",
+  filename: __filename,
+},
+async (m) => {
+  try {
+    let text = m.body.split(" ").slice(1).join(" ").trim();
+
+    // If text is empty, try reply text
+    if (!text && m.quoted?.body) text = m.quoted.body;
+
+    if (!text || !text.includes("tiktok.com")) {
+      return await m.reply("*🌀 Provide a valid TikTok video URL!*\n\nExample:\n.tik2 https://vt.tiktok.com/ZSB5Dc6YX/");
+    }
+
+    const response = await axios.get(`https://delirius-apiofc.vercel.app/download/tiktok?url=${encodeURIComponent(text)}`);
+    const json = response.data;
+
+    if (!json.status || !json?.data?.meta?.media?.[0]?.org) {
+      return await m.reply("❌ *Failed to fetch video. Please try another link.*");
+    }
+
+    const videoUrl = json.data.meta.media[0].org;
+    const title = json.data.title || "TikTok Video";
+    const author = json.data.author?.nickname || json.data.author?.username || "Unknown";
+
+    const caption = `🎬 *${title}*\n👤 By: ${author}`;
+
+    await m.send(videoUrl, { caption }, "video", m);
+
+  } catch (e) {
+    m.error(`${e}\n\nCommand: tik2`, e, false);
+  }
+});
+smd({
+  cmdname: "fb",
+  alias: ["facebook", "fbdl"],
+  desc: "Download Facebook videos using API",
+  type: "downloader",
+  filename: __filename,
+},
+async (m) => {
+  try {
+    let text = m.body.split(" ").slice(1).join(" ").trim();
+
+    // If text is empty, try reply text
+    if (!text && m.quoted?.body) text = m.quoted.body;
+
+    if (!text || !text.includes("facebook.com")) {
+      return await m.reply("*🌀 Provide a valid Facebook video URL!*\n\nExample:\n.fb https://www.facebook.com/share/v/17FQTQ8qVw/");
+    }
+
+    const apiUrl = `https://apidl.asepharyana.cloud/api/downloader/fbdl?url=${encodeURIComponent(text)}`;
+    
+    // Show waiting message
+    const waitMsg = await m.reply("*⏳ Downloading Facebook video... Please wait*");
+    
+    const response = await axios.get(apiUrl, { timeout: 30000 });
+    const json = response.data;
+
+    if (!json.status || !json.data || json.data.length === 0) {
+      await waitMsg.delete(); // Remove waiting message
+      return await m.reply("❌ *Failed to fetch video. Please try another link.*");
+    }
+
+    // Get the highest quality video available
+    const videoData = json.data.reduce((prev, current) => 
+      (parseInt(current.resolution) > parseInt(prev.resolution)) ? current : prev
+    );
+
+    const videoUrl = videoData.url;
+    const thumbnail = videoData.thumbnail;
+    const quality = videoData.resolution;
+
+    const caption = `📹 *Facebook Video*\n🖼️ Thumbnail: ${thumbnail ? "Sent" : "None"}\n🎚️ Quality: ${quality || "Unknown"}`;
+
+    await waitMsg.delete(); // Remove waiting message
+    await m.send(videoUrl, { caption, thumbnail }, "video", m);
+
+  } catch (e) {
+    m.error(`${e}\n\nCommand: fb`, e, false);
+    await m.reply("❌ An error occurred while processing your request. Please try again later.");
+  }
+});
