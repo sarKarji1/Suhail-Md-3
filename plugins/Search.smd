@@ -1,0 +1,95 @@
+const {
+  smd,
+  tlang,
+  prefix,
+  Config,
+  sleep,
+  getBuffer,
+  smdJson,
+  smdBuffer
+} = require('../lib');
+
+const axios = require('axios');
+const yts = require('yt-search');
+
+//
+// 🔍 YouTube Search Command (yts)
+//
+smd({
+  cmdname: "yts",
+  alias: ["ytsearch", "ysearch"],
+  desc: "Search YouTube and get video results",
+  type: "search",
+  filename: __filename,
+},
+async (m) => {
+  try {
+    let text = m.body.split(" ").slice(1).join(" ").trim();
+    if (!text) return m.reply("*🔍 Provide a search query!*\n\nExample:\n.yts tu hai kahan");
+
+    const search = await yts(text);
+    const videos = search.videos.slice(0, 8);
+
+    if (!videos || videos.length === 0) return m.reply("❌ No results found!");
+
+    let msg = `🎬 *YouTube Search Results for:* _${text}_\n\n`;
+
+    for (let i = 0; i < videos.length; i++) {
+      const v = videos[i];
+      msg += `*${i + 1}. ${v.title}*\n`;
+      msg += `🧑 ${v.author.name} | ⏱️ ${v.timestamp} | 👁️ ${v.views.toLocaleString()}\n`;
+      msg += `🔗 ${v.url}\n\n`;
+    }
+
+    await m.reply(msg.trim());
+
+  } catch (e) {
+    m.error(`${e}\n\nCommand: yts`, e, false);
+  }
+});
+
+//
+// 📦 NPM Search Command (npm)
+//
+smd({
+  cmdname: "npm",
+  alias: ["npmpkg", "npms"],
+  desc: "Search NPM for a package",
+  type: "search",
+  filename: __filename,
+},
+async (m) => {
+  try {
+    let text = m.body.split(" ").slice(1).join(" ").trim();
+
+    if (!text) return m.reply("*📦 Enter a package name to search!*\n\nExample:\n.npm axios");
+
+    const res = await axios.get(`https://registry.npmjs.com/${encodeURIComponent(text)}`);
+    const info = res.data;
+
+    const name = info.name || text;
+    const version = info["dist-tags"]?.latest || "unknown";
+    const desc = info.description || "No description";
+    const author = typeof info.author === "object" ? info.author.name : info.author || "Unknown";
+    const homepage = `https://www.npmjs.com/package/${name}`;
+
+    const stats = await axios.get(`https://api.npmjs.org/downloads/point/last-week/${name}`);
+    const downloads = stats.data.downloads?.toLocaleString() || "N/A";
+
+    const msg = `📦 *NPM Package Info*\n\n` +
+      `🔹 *Name:* ${name}\n` +
+      `🔸 *Version:* ${version}\n` +
+      `🧑 *Author:* ${author}\n` +
+      `📝 *Description:* ${desc}\n` +
+      `📈 *Weekly Downloads:* ${downloads}\n` +
+      `🌐 *Link:* ${homepage}`;
+
+    await m.reply(msg);
+
+  } catch (e) {
+    if (e?.response?.status === 404) {
+      return m.reply("❌ Package not found on NPM.");
+    }
+    m.error(`${e}\n\nCommand: npm`, e, false);
+  }
+});
