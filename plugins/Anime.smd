@@ -1,0 +1,306 @@
+const Config = require("../config");
+const {
+  fancytext,
+  sendGImages,
+  lang,
+  tiny,
+  runtime,
+  formatp,
+  botpic,
+  prefix,
+  sck1,
+  smd
+} = require("../lib");
+const axios = require("axios");
+const fetch = require("node-fetch");
+const { fetchJson, getBuffer } = require("../lib/");
+
+/**
+ * Sends anime-related content based on type
+ * @param {Object} bot - The bot instance
+ * @param {Object} message - The message object
+ * @param {String} type - Type of content to send (waifu, neko, etc.)
+ * @param {String} options - Additional options for the content
+ */
+async function sendAnime(bot, message, type, options = '') {
+  try {
+    // Handle waifu, neko, and megumin types
+    if (type === "waifu" || type === "neko" || type === "megumin") {
+      const category = options.split('|')[0] || '';
+      const count = options.split('|')[1] || '1';
+      const caption = options.split('|')[1] ? '' : ` *${type}, Here we go😊!!!!*`;
+      
+      const apiUrl = category === "nsfw" 
+        ? `https://api.waifu.pics/nsfw/${type === 'megumin' ? "trap" : "waifu"}`
+        : `https://api.waifu.pics/sfw/${type}`;
+
+      for (let i = 0; i < count; i++) {
+        const response = await (await fetch(apiUrl)).json();
+        await bot.bot.sendMessage(message.chat, {
+          image: { url: response.url },
+          caption: caption
+        }, { quoted: message });
+      }
+    } 
+    // Handle loli and foxgirl types
+    else if (type === "loli" || type === "foxgirl") {
+      const apiUrl = type === "loli" 
+        ? "https://waifu.pics/api/sfw/shinobu" 
+        : "https://nekos.life/api/v2/img/fox_girl";
+      
+      const response = await axios.get(apiUrl);
+      await bot.bot.sendMessage(message.chat, {
+        image: { url: response.data.url }
+      }, { quoted: message });
+    } 
+    // Handle demon and naruto types (videos)
+    else if (type === "demon" || type === "naruto") {
+      const jsonUrl = `https://raw.githubusercontent.com/SuhailTechInfo/Suhail-Md-Media/main/${
+        type === "demon" ? 'Demonslayer' : "Naruto"
+      }/video.json`;
+      
+      const data = await fetchJson(jsonUrl);
+      const randomVideo = data.result[Math.floor(Math.random() * data.result.length)].url;
+      
+      await bot.bot.sendMessage(message.chat, {
+        video: { url: randomVideo },
+        caption: "*Here we go😊!!!!*"
+      });
+    } 
+    // Handle anime news
+    else if (type === "animenews") {
+      const response = await axios.get(
+        `https://newsapi.org/v2/everything?q=${options}&domains=techcrunch.com,` +
+        `animenewsnetwork.com,myanimelist.net,comingsoon.net,crunchyroll.com&` +
+        `language=en&sortby=publishedat&apikey=cd4116be09ef4a0caceedf21b6258460&pageSize=8`
+      );
+      
+      const articles = response.data.articles;
+      articles.map(async (article, index) => {
+        try {
+          bot.bot.sendMessage(message.chat, {
+            image: { url: article.urlToImage },
+            caption: `*Title🔰:* ${article.title}\n\n` +
+                    `*Content🧩:* ${article.content}\n` +
+                    `*Author📌:* ${article.author}\n` +
+                    `*Source♦️:* ${article.source.name}\n` +
+                    `*Created On☘️:* ${article.publishedAt}\n` +
+                    `*More on✨:* ${article.url}\n\n` +
+                    `${Config.caption}*`
+          }, { quoted: message });
+        } catch (error) {}
+      });
+    }
+  } catch (error) {
+    console.log(`./commands/Anime.js/sendAnime()\n`, error);
+    await message.error(error);
+  }
+}
+
+// Waifu Command
+smd({
+  pattern: "waifu",
+  desc: "To get Waifu Random Pics",
+  category: "Anime Pics",
+  filename: __filename
+}, async (message, options) => {
+  try {
+    return await sendAnime(message, message, 'waifu', options);
+  } catch {}
+});
+
+// Neko Command
+smd({
+  pattern: "neko",
+  category: "Anime Pics",
+  desc: "Sends a Neko Image in chat",
+  filename: __filename
+}, async (message, options) => {
+  try {
+    return await sendAnime(message, message, "neko", options);
+  } catch {}
+});
+
+// Megumin Command
+smd({
+  pattern: 'megumin',
+  desc: "To get Megumin Random Pics",
+  category: "Anime Pics",
+  filename: __filename
+}, async (message, options) => {
+  try {
+    return await sendAnime(message, message, "megumin", options);
+  } catch {}
+});
+
+// Loli Command
+smd({
+  pattern: 'loli',
+  category: "Anime Pics",
+  filename: __filename,
+  desc: "Sends image of loli."
+}, async (message) => {
+  try {
+    return await sendAnime(message, message, 'loli');
+  } catch {}
+});
+
+// Foxgirl Command
+smd({
+  pattern: "foxgirl",
+  category: "Anime Pics",
+  desc: "Sends image of Fox Girl Anime.",
+  filename: __filename
+}, async (message) => {
+  try {
+    return await sendAnime(message, message, "foxgirl");
+  } catch {}
+});
+
+// Demon Slayer Command
+smd({
+  pattern: "demon",
+  alias: ['ds'],
+  desc: "To get Demon Slayer Random Videos",
+  category: "Anime Pics",
+  filename: __filename
+}, async (message) => {
+  try {
+    return await sendAnime(message, message, "demon");
+  } catch {}
+});
+
+// Naruto Command
+smd({
+  pattern: "naruto",
+  desc: "To get Naruto Random Videos",
+  category: "Anime Pics",
+  filename: __filename
+}, async (message) => {
+  try {
+    return await sendAnime(message, message, "naruto");
+  } catch {}
+});
+
+// Pokemon Picture Command
+smd({
+  pattern: 'pokepic',
+  category: "Anime Pics",
+  filename: __filename,
+  desc: "Sends image of pokemon."
+}, async (message, query) => {
+  try {
+    return await sendGImages(
+      message, 
+      query + "Pokemon Pics only HD ", 
+      "*---「 Poke Pic 」---*", 
+      query
+    );
+  } catch {}
+});
+
+// Anime Picture Command
+smd({
+  pattern: "animepic",
+  category: "Anime Pics",
+  filename: __filename,
+  desc: "Anime images"
+}, async (message, query) => {
+  try {
+    return await sendGImages(
+      message, 
+      query + "Anime Pics HD", 
+      "*-----「 Anime Image 」-----*", 
+      query
+    );
+  } catch {}
+});
+
+// Anime Wallpaper Command
+smd({
+  pattern: "animewall",
+  category: "Anime Pics",
+  desc: "Anime Wallpaper Random",
+  filename: __filename
+}, async (message, query) => {
+  try {
+    return await sendGImages(
+      message, 
+      query + "anime wallpaper for desktop full hd", 
+      "*---「 Anime Wallpaper 」---*", 
+      query
+    );
+  } catch {}
+});
+
+// Anime News Command
+const newsQueries = [
+  "Anime News Today", 
+  "New Anime", 
+  "Upcoming Anime News", 
+  "New Anime Info", 
+  "Whats news in Anime", 
+  "Anime Series", 
+  "Manga News today", 
+  "Anime New News", 
+  "Anime News today"
+];
+
+smd({
+  pattern: "animenews",
+  category: "Anime Pics",
+  desc: "Sends Anime News in chat",
+  filename: __filename
+}, async (message, query, { cmdName }) => {
+  try {
+    const randomQuery = newsQueries[Math.floor(Math.random() * newsQueries.length)] + query;
+    return await sendAnime(message, message, cmdName, randomQuery);
+  } catch {}
+});
+
+// Pokemon Info Command
+smd({
+  pattern: "pokemon",
+  category: "Anime Pics",
+  filename: __filename,
+  desc: "Sends info of pokemon in current chat."
+}, async (message, pokemonName) => {
+  try {
+    if (!pokemonName) {
+      return message.reply("*Uhh Please Give Me Poki Name/num*");
+    }
+    
+    try {
+      const { data: pokemonData } = await axios.get(
+        `https://pokeapi.co/api/v2/pokemon/${pokemonName}`
+      );
+      
+      if (!pokemonData.name) {
+        return message.reply("❌ Could not found any pokemon with that name");
+      }
+      
+      const pokemonInfo = `
+*•Name:* ${pokemonData.name}
+*•Pokedex ID:* ${pokemonData.id}
+*•Height:* ${pokemonData.height}
+*•Weight:* ${pokemonData.weight}
+*•Abilities:* ${pokemonData.abilities[0].ability.name}, ${pokemonData.abilities[1]?.ability.name || 'N/A'}
+*•Base Experience:* ${pokemonData.base_experience}
+*•Type:* ${pokemonData.types[0].type.name}
+*•Base Stat:* ${pokemonData.stats[0].base_stat}
+*•Attack:* ${pokemonData.stats[1].base_stat}
+*•Defense:* ${pokemonData.stats[2].base_stat}
+*•Special Attack:* ${pokemonData.stats[3].base_stat}
+*•Special Defense:* ${pokemonData.stats[4].base_stat}
+*•Speed:* ${pokemonData.stats[5].base_stat}
+      `;
+      
+      return await Suhail.bot.sendMessage(message.jid, {
+        image: { url: pokemonData.sprites.front_default },
+        caption: pokemonInfo
+      }, { quoted: message });
+    } catch (error) {
+      message.reply("*_Ahh, Couldn't find any pokemon._*");
+    }
+  } catch {}
+});
