@@ -91,7 +91,7 @@ module.exports = {
 
 
   WORKTYPE: process.env.WORKTYPE || process.env.MODE|| "private",
-  LANG: ( process.env.THEME ||  "SUHAIL"  ).toUpperCase(),
+  LANG: ( process.env.THEME ||  "EDITH"  ).toUpperCase(),
 
 
 
@@ -101,23 +101,6 @@ module.exports = {
 
 global.ELEVENLAB_API_KEY = process.env.ELEVENLAB_API_KEY || "";
 global.aitts_Voice_Id = process.env.AITTS_ID|| "37";
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
