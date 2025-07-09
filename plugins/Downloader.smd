@@ -82,8 +82,8 @@ async (m) => {
 
 // TIKTOK COMMAND
 smd({
-  cmdname: "tik",
-  alias: ["tiktok", "tt"],
+  cmdname: "tiktok",
+  alias: ["tik", "tt"],
   desc: "Download TikTok video without watermark",
   type: "downloader",
   filename: __filename,
@@ -199,5 +199,81 @@ async (m) => {
   } catch (e) {
     m.error(`${e}\n\nCommand: mega`, e, false);
     await m.reply(`❌ Error: ${e.message || "Failed to download file"}`);
+  }
+});
+//ytmp4 downloader
+
+smd({
+  cmdname: "ytmp4",
+  alias: ["ytv"],
+  desc: "Download YouTube video via direct URL",
+  type: "downloader",
+  filename: __filename,
+},
+async (m) => {
+  try {
+    let text = m.body.split(" ").slice(1).join(" ").trim();
+
+    // Try reply text if no URL given
+    if (!text && m.quoted?.body) text = m.quoted.body;
+
+    if (!text || !text.includes("youtube.com") && !text.includes("youtu.be")) {
+      return m.reply("*📺 Provide a valid YouTube video URL!*\n\nExample:\n.ytmp4 https://youtube.com/watch?v=A7NDb0iDZd0");
+    }
+
+    const api = `https://exonity.tech/api/ytdl-download?url=${encodeURIComponent(text)}&type=video`;
+
+    const res = await axios.get(api);
+    const json = res.data;
+
+    if (!json.status || !json.data?.url) {
+      return m.reply("❌ Failed to fetch video. Try another link.");
+    }
+
+    const { title, uploader, duration, thumbnail, url } = json.data;
+    const caption = `🎞️ *${title}*\n👤 Uploader: ${uploader}\n⏱ Duration: ${duration}`;
+
+    await m.send(url, { caption, thumbnail }, "video", m);
+
+  } catch (e) {
+    m.error(`${e}\n\nCommand: ytmp4`, e, false);
+  }
+});
+
+// Ytmp3 command 
+smd({
+  cmdname: "ytmp3",
+  alias: ["yta"],
+  desc: "Download YouTube video via direct URL",
+  type: "downloader",
+  filename: __filename,
+},
+async (m) => {
+  try {
+    let text = m.body.split(" ").slice(1).join(" ").trim();
+
+    // Try reply text if no URL given
+    if (!text && m.quoted?.body) text = m.quoted.body;
+
+    if (!text || !text.includes("youtube.com") && !text.includes("youtu.be")) {
+      return m.reply("*📺 Provide a valid YouTube video URL!*\n\nExample:\n.ytmp3 https://youtube.com/watch?v=A7NDb0iDZd0");
+    }
+
+    const api = `https://exonity.tech/api/ytdl-download?url=${encodeURIComponent(text)}&type=audio`;
+
+    const res = await axios.get(api);
+    const json = res.data;
+
+    if (!json.status || !json.data?.url) {
+      return m.reply("❌ Failed to fetch video. Try another link.");
+    }
+
+    const { title, uploader, duration, thumbnail, url } = json.data;
+    const caption = `🎞️ *${title}*\n👤 Uploader: ${uploader}\n⏱ Duration: ${duration}`;
+
+    await m.send(url, { caption, thumbnail }, "audio", m);
+
+  } catch (e) {
+    m.error(`${e}\n\nCommand: ytmp3`, e, false);
   }
 });
