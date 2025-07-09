@@ -1,0 +1,70 @@
+const {
+  smd,
+  tlang,
+  prefix,
+  Config,
+  sleep,
+  getBuffer,
+  smdJson,
+  smdBuffer
+} = require('../lib');
+
+const axios = require('axios');
+
+smd({
+  cmdname: "apk",
+  alias: ["apkdl", "apksearch"],
+  desc: "Search and download APKs from Aptoide",
+  type: "downloader",
+  filename: __filename,
+},
+async (m) => {
+  try {
+    let query = m.body.split(" ").slice(1).join(" ").trim();
+
+    if (!query) return m.reply("*📲 Provide an app name to search!*\n\nExample:\n.apk whatsapp");
+
+    const url = `https://ws75.aptoide.com/api/7/apps/search/query=${encodeURIComponent(query)}/limit=1`;
+    const { data } = await axios.get(url);
+
+    const app = data?.datalist?.list?.[0];
+    if (!app || !app.file?.path) return m.reply("❌ App not found or no APK available.");
+
+    const {
+      name,
+      package: pack,
+      developer,
+      size,
+      file,
+      icon,
+      graphic,
+      stats
+    } = app;
+
+    const apkName = name || query;
+    const version = file?.vername || "unknown";
+    const dev = developer?.name || "unknown";
+    const downloadLink = file.path;
+    const rating = stats?.prating?.avg || "N/A";
+    const downloads = stats?.pdownloads?.toLocaleString() || "N/A";
+
+    const caption =
+      `📲 *${apkName}*\n` +
+      `🧑 Dev: ${dev}\n` +
+      `📦 Package: ${pack}\n` +
+      `🆔 Version: ${version}\n` +
+      `⭐ Rating: ${rating}\n` +
+      `⬇️ Downloads: ${downloads}`;
+
+    const buffer = await getBuffer(downloadLink);
+
+    await m.send(buffer, {
+      caption,
+      fileName: `${apkName.replace(/\s+/g, "_")}_v${version}.apk`,
+      mimetype: 'application/vnd.android.package-archive'
+    }, "document", m);
+
+  } catch (e) {
+    m.error(`${e}\n\nCommand: apk`, e, false);
+  }
+});
