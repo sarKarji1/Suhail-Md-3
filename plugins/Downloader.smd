@@ -11,6 +11,7 @@ const {
 
 const axios = require('axios');
 const yts = require('yt-search');
+const mega = require('megajs');
 
 smd({
   cmdname: "video",
@@ -149,13 +150,13 @@ async (m) => {
     const apiUrl = `https://apidl.asepharyana.cloud/api/downloader/fbdl?url=${encodeURIComponent(text)}`;
     
     // Show waiting message
-    const waitMsg = await m.reply("*⏳ Downloading Facebook video... Please wait*");
+//    const waitMsg = await m.reply("*⏳ Downloading Facebook video... Please wait*");
     
     const response = await axios.get(apiUrl, { timeout: 30000 });
     const json = response.data;
 
     if (!json.status || !json.data || json.data.length === 0) {
-      await waitMsg.delete(); // Remove waiting message
+     // await waitMsg.delete(); // Remove waiting message
       return await m.reply("❌ *Failed to fetch video. Please try another link.*");
     }
 
@@ -170,11 +171,88 @@ async (m) => {
 
     const caption = `📹 *Facebook Video*\n🖼️ Thumbnail: ${thumbnail ? "Sent" : "None"}\n🎚️ Quality: ${quality || "Unknown"}`;
 
-    await waitMsg.delete(); // Remove waiting message
+    //await waitMsg.delete(); // Remove waiting message
     await m.send(videoUrl, { caption, thumbnail }, "video", m);
 
   } catch (e) {
     m.error(`${e}\n\nCommand: fb`, e, false);
     await m.reply("❌ An error occurred while processing your request. Please try again later.");
+  }
+});
+
+ requires
+
+smd({
+  cmdname: "mega",
+  alias: ["megadl", "megadownload"],
+  desc: "Download files from Mega.nz links",
+  type: "downloader",
+  filename: __filename,
+},
+async (m) => {
+  try {
+    let text = m.body.split(" ").slice(1).join(" ").trim();
+
+    // If text is empty, try reply text
+    if (!text && m.quoted?.body) text = m.quoted.body;
+
+    if (!text || !text.match(/mega(\.nz|\.io)/i)) {
+      return await m.reply("*📦 Provide a valid Mega.nz link!*\n\nExample:\n.mega https://mega.nz/file/abc123#xyz456");
+    }
+
+    // Show waiting message
+  //  const waitMsg = await m.reply("*⏳ Downloading from Mega... This may take a while for large files*");
+
+    // Extract key from URL if present
+    const urlParts = text.split('#');
+    const url = urlParts[0];
+    const key = urlParts[1] || null;
+
+    // Download file from Mega
+    const file = await mega.File.fromURL(text).loadAttributes();
+    
+    if (!file) {
+      await waitMsg.delete();
+      return await m.reply("❌ Failed to access file. Check if link is valid.");
+    }
+
+    // Get file info
+    const fileName = file.name;
+    const fileSize = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+    const fileType = file.name.split('.').pop().toUpperCase();
+
+    // Start download
+    const downloadStream = file.download();
+
+    // Collect chunks
+    const chunks = [];
+    downloadStream.on('data', (chunk) => chunks.push(chunk));
+    
+    await new Promise((resolve, reject) => {
+      downloadStream.on('end', resolve);
+      downloadStream.on('error', reject);
+    });
+
+    const fileBuffer = Buffer.concat(chunks);
+
+   // await waitMsg.delete(); // Remove waiting message
+
+    // Send file with info
+    const caption = `📦 *Mega Download*\n\n🗂️ File: ${fileName}\n📊 Size: ${fileSize}\n📝 Type: ${fileType}`;
+    
+    await m.send(
+      fileBuffer, 
+      { 
+        filename: fileName,
+        caption: caption,
+        mimetype: mime.lookup(fileName) || 'application/octet-stream'
+      }, 
+      "document", 
+      m
+    );
+
+  } catch (e) {
+    m.error(`${e}\n\nCommand: mega`, e, false);
+    await m.reply(`❌ Error: ${e.message || "Failed to download file"}`);
   }
 });
