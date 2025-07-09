@@ -102,6 +102,8 @@
 
       "mumaker": "^2.0.0",
 
+      "megajs": "^1.3.7",
+
       "node-cron": "^3.0.0",
 
       "node-fetch": "^2.6.1",
